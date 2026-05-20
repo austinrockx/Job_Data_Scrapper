@@ -56,10 +56,30 @@ HEADERS_BASE = {
     "User-Agent": "Mozilla/5.0 (compatible; ngc-job-scraper/1.0)",
 }
 
-# Tolerant regex: allows variable whitespace and ':' / '-' separators,
-# case-insensitive. Captures the Yes/No verdict.
-CLEARANCE_RE = re.compile(
+# NGC uses two parallel clearance boilerplates depending on the posting:
+#
+#   1. "CLEARANCE REQUIRED FOR START: Yes/No" — used on most US postings.
+#      This is the authoritative signal when present.
+#
+#   2. "CLEARANCE TYPE: <value>" — used on Australian/UK postings and some
+#      US SAP/contingent contracts. Used INSTEAD of the line above when
+#      NGC wants to specify the type of clearance involved.
+#
+# Strategy: prefer (1) when present; fall back to (2). For (2), a non-empty
+# clearance type (Secret, SC, SAP, AU-Protected, etc.) means clearance is
+# involved → classify as "Yes". Only "None"/"N/A"/"Public Trust" etc. count
+# as no-clearance.
+CLEARANCE_REQUIRED_RE = re.compile(
     r"CLEARANCE\s+REQUIRED\s+FOR\s+START\s*[:\-]\s*(Yes|No)",
+    re.IGNORECASE,
+)
+CLEARANCE_TYPE_RE = re.compile(
+    r"CLEARANCE\s+TYPE\s*[:\-]\s*([^\n\r]+)",
+    re.IGNORECASE,
+)
+# CLEARANCE TYPE values that mean "no actual security clearance required"
+NO_CLEARANCE_TYPE_VALUES_RE = re.compile(
+    r"^\s*(none|n/?a|not\s+required|not\s+applicable|public\s+trust)\s*$",
     re.IGNORECASE,
 )
 

@@ -1,8 +1,8 @@
 req_id,title,department,location,work_location_option,posted_date,url
+R10233213,Associate Energetic Engineer/Energetic Engineer – Level 1 or Level 2,Material/Process,"FL,US",onsite,2026-05-20,https://jobs.northropgrumman.com/careers/job/1340071761594
 R10231029,Accountant,Finance and Accounting,"Irving, TX, US; Falls Church, VA, US; Melbourne, FL, US; Bloomington, MN, US; Redondo Beach, CA, US",hybrid,2026-05-20,https://jobs.northropgrumman.com/careers/job/1340071524982
 R10233212,Associate Energetic Engineer/Energetic Engineer – Level 1 or Level 2,Material/Process,"FL,US",onsite,2026-05-20,https://jobs.northropgrumman.com/careers/job/1340071761577
 R10233595,Drafter - 1,Tech Support Mult-Func,"Corinne, UT, US",onsite,2026-05-20,https://jobs.northropgrumman.com/careers/job/1340071791345
-R10233213,Associate Energetic Engineer/Energetic Engineer – Level 1 or Level 2,Material/Process,"FL,US",onsite,2026-05-20,https://jobs.northropgrumman.com/careers/job/1340071761594
 R10233476,Propulsion Engineer 1 / 2,Mechanical,"Corinne, UT, US",onsite,2026-05-19,https://jobs.northropgrumman.com/careers/job/1340071784980
 R10233374,Assembler 1/2,Manufacturing and Production,"Ridgecrest, CA, US",onsite,2026-05-19,https://jobs.northropgrumman.com/careers/job/1340071776303
 R10232274,Production Planner 2/3,Manufacturing and Production,"Iuka, MS, US",onsite,2026-05-19,https://jobs.northropgrumman.com/careers/job/1340071644250
@@ -29,8 +29,8 @@ R10233417,Software Engineer: Automation/AI - Level 3 (Chandler),Software,"Chandl
 R10233299,Electrical Engineer 2 – Electrical Ground Support Equipment (EGSE),Electrical,"Chandler, AZ, US",onsite,2026-05-18,https://jobs.northropgrumman.com/careers/job/1340071774871
 R10231861,Policies and Procedures Analyst,Policy/Procedure,"Linthicum Heights, MD, US",onsite,2026-05-18,https://jobs.northropgrumman.com/careers/job/1340071611902
 R10233000,Milling Machine Machinist 3,Manufacturing and Production,"Melbourne, FL, US",onsite,2026-05-18,https://jobs.northropgrumman.com/careers/job/1340071738945
-R10229125,Enterprise-Wide Apps Analyst / Principal Enterprise-Wide Apps Analyst,Operations (IT),"New York, NY, US",remote_local,2026-05-18,https://jobs.northropgrumman.com/careers/job/1340071253593
 R10233379,Associate Engineer Microelectronic Semiconductors,Electrical,"Manhattan Beach, CA, US",onsite,2026-05-18,https://jobs.northropgrumman.com/careers/job/1340071776358
+R10229125,Enterprise-Wide Apps Analyst / Principal Enterprise-Wide Apps Analyst,Operations (IT),"New York, NY, US",remote_local,2026-05-18,https://jobs.northropgrumman.com/careers/job/1340071253593
 R10231083,Engineer Aeronautical - Level 2,Mechanical,"Chandler, AZ, US",onsite,2026-05-18,https://jobs.northropgrumman.com/careers/job/1340071526708
 R10232844,Plant Protection Officer,NGC - Non - NGJF Union,"Rocket Center, WV, US",onsite,2026-05-18,https://jobs.northropgrumman.com/careers/job/1340071720054
 R10233245,Supply Chain Subcontract Specialist,Global Supply Chain Mult-Func,"Linthicum Heights, MD, US",onsite,2026-05-18,https://jobs.northropgrumman.com/careers/job/1340071771671
@@ -91,8 +91,8 @@ R10232153,Administrative Assistant 2,General Administrative,"Ocean Springs, MS, 
 R10230951,Engineer Tooling,Material/Process,"Rocket Center, WV, US",onsite,2026-05-06,https://jobs.northropgrumman.com/careers/job/1340071522782
 R10231986,2026 Associate Program Cost and Schedule Control Analyst,Business Management Mult-Func,"Dulles, VA, US",onsite,2026-05-06,https://jobs.northropgrumman.com/careers/job/1340071622574
 R10232152,Configuration Data Management Controller 2,Tech Support Mult-Func,"Rocket Center, WV, US",onsite,2026-05-06,https://jobs.northropgrumman.com/careers/job/1340071635139
-R10231854,Inspector 2 / 3,Mission and Quality Assurance,"Ridgecrest, CA, US",onsite,2026-05-05,https://jobs.northropgrumman.com/careers/job/1340071611716
 R10231848,Engineer Supplier Quality,Mission/Quality Assurance,"Buffalo, NY, US",onsite,2026-05-05,https://jobs.northropgrumman.com/careers/job/1340071611053
+R10231854,Inspector 2 / 3,Mission and Quality Assurance,"Ridgecrest, CA, US",onsite,2026-05-05,https://jobs.northropgrumman.com/careers/job/1340071611716
 R10231884,Supply Chain Operations Coordinator 2 or 3,Global Supply Chain Mult-Func,"Palmdale, CA, US",onsite,2026-05-05,https://jobs.northropgrumman.com/careers/job/1340071612571
 R10231924,Quality Control Technician 2(3rd Shift),Mission and Quality Assurance,"Rocket Center, WV, US",onsite,2026-05-05,https://jobs.northropgrumman.com/careers/job/1340071618237
 R10231133,Administrative Functional Support 2,General Administrative,"Huntsville, AL, US",onsite,2026-05-05,https://jobs.northropgrumman.com/careers/job/1340071569524
@@ -107,7 +107,6 @@ R10229237,Supply Chain Technical Coordinator 2,Global Supply Chain Mult-Func,"Iu
 R10231480,Sentinel Material Process Engineer- *18027,Material/Process,"Roy, UT, US",onsite,2026-05-01,https://jobs.northropgrumman.com/careers/job/1340071570556
 R10229234,Supply Chain Planning Specialist,Global Supply Chain Mult-Func,"Iuka, MS, US",onsite,2026-05-01,https://jobs.northropgrumman.com/careers/job/1340071212649
 R10231464,Material Process Engineer 18026*,Material/Process,"Roy, UT, US",onsite,2026-05-01,https://jobs.northropgrumman.com/careers/job/1340071569710
-R10230869,Production Test Technician 1,Mission and Quality Assurance,"San Diego, CA, US",onsite,2026-04-30,https://jobs.northropgrumman.com/careers/job/1340071506046
 R10231271,Electronic Technician 2 (Second Shift),Tech Support Mult-Func,"Rolling Meadows, IL, US",onsite,2026-04-30,https://jobs.northropgrumman.com/careers/job/1340071550097
 R10230894,F-18 Aircraft Structures Mechanic 4,Flight Operations Mult-Func,"San Antonio, TX, US",onsite,2026-04-30,https://jobs.northropgrumman.com/careers/job/1340071525176
 R10230892,F-18 Aircraft Structures Mechanic 3,Flight Operations Mult-Func,"San Antonio, TX, US",onsite,2026-04-30,https://jobs.northropgrumman.com/careers/job/1340071482879
@@ -134,13 +133,13 @@ R10230115,Supply Chain Technical Coordinator 2 OR 3,Global Supply Chain Mult-Fun
 R10231064,Mechanical Engineer,Electrical,"McClellan Park, CA, US",onsite,2026-04-27,https://jobs.northropgrumman.com/careers/job/1340071525820
 R10230762,Production Controller 2,Manufacturing and Production,"Rolling Meadows, IL, US",onsite,2026-04-27,https://jobs.northropgrumman.com/careers/job/1340071520590
 R10230966,Program Cost Schedule Control Analyst 2/3,Business Management Mult-Func,"Rocket Center, WV, US",onsite,2026-04-27,https://jobs.northropgrumman.com/careers/job/1340071523292
+R10230707,Logistics Management Analyst,Tech Support Mult-Func,"Warner Robins, GA, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340071470374
 R10224329,Program Cost and Schedule Control Analyst,Business Management Mult-Func,"Palmdale, CA, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340070299137
 R10222006,Program Cost and Schedule Control Analyst,Business Management Mult-Func,"Redondo Beach, CA, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340069872237
-R10230707,Logistics Management Analyst,Tech Support Mult-Func,"Warner Robins, GA, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340071470374
-R10225090,Program Cost and Schedule Control Analyst,Business Management Mult-Func,"El Segundo, CA, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340070498400
 R10230079,Program Cost and Schedule Control Analyst,Business Management Mult-Func,"Oklahoma City, OK, US; Oklahoma City, OK, US",hybrid,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340071321800
-R10226546,Maintenance Technician 3,Facilities Mult-Func,"Clearfield, UT, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340070752645
+R10225090,Program Cost and Schedule Control Analyst,Business Management Mult-Func,"El Segundo, CA, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340070498400
 R10230746,Maintenance Janitor Level 1 or Level 2,"Janitorial,GroundsOthCustodial","Layton, UT, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340071472488
+R10226546,Maintenance Technician 3,Facilities Mult-Func,"Clearfield, UT, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340070752645
 R10228835,Program Cost and Schedule Control Analyst,Business Management Mult-Func,"Melbourne, FL, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340071045768
 R10230739,Maintenance Janitor Level 1 or Level 2 (Second Shift),"Janitorial,GroundsOthCustodial","Layton, UT, US",onsite,2026-04-23,https://jobs.northropgrumman.com/careers/job/1340071472373
 R10230642,Drafter/Designer,Tech Support Mult-Func,"Rocket Center, WV, US",onsite,2026-04-22,https://jobs.northropgrumman.com/careers/job/1340071456749
