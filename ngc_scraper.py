@@ -21,6 +21,7 @@ Stdlib-only; no pip install needed.
 import csv
 import json
 import os
+import random
 import re
 import sys
 import time
@@ -38,13 +39,17 @@ from html import unescape
 BASE_URL    = "https://jobs.northropgrumman.com"
 DOMAIN      = "ngc.com"                   # Eightfold tenant identifier
 PAGE_SIZE   = 10                          # Eightfold caps this tenant at 10/page
-MAX_WORKERS = 8                           # parallel detail fetches
+MAX_WORKERS = 3                           # Eightfold rate-limits aggressively; keep low
 REQUEST_TIMEOUT_SEC = 30
-INTER_PAGE_DELAY_SEC = 0.05               # polite pause between listing pages
+INTER_PAGE_DELAY_SEC  = 0.10              # pause between listing pages
+DETAIL_JITTER_MIN_SEC = 0.25              # per-worker delay before each detail fetch
+DETAIL_JITTER_MAX_SEC = 0.60
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
-NO_CSV       = os.path.join(OUT_DIR, "ngc_entry_level_no_clearance.csv")
-UNKNOWN_CSV  = os.path.join(OUT_DIR, "ngc_entry_level_unknown_clearance.csv")
+NO_CSV         = os.path.join(OUT_DIR, "ngc_entry_level_no_clearance.csv")
+UNKNOWN_CSV    = os.path.join(OUT_DIR, "ngc_entry_level_unknown_clearance.csv")
+FORBIDDEN_CSV  = os.path.join(OUT_DIR, "ngc_entry_level_forbidden.csv")
+CACHE_DIR      = os.path.join(OUT_DIR, ".ngc_detail_cache")  # per-job JSON, lets reruns resume
 
 HEADERS_BASE = {
     "Accept": "application/json",
@@ -62,7 +67,8 @@ CLEARANCE_RE = re.compile(
 # HTTP helpers
 # ----------------------------------------------------------------------------
 
-def fetch_json(url, extra_headers=None, retries=3):
+def fetch_json(url, extra_headers=None, retries=6):
+    """GET url, return parsed JSON. Handles 429 with Retry-After + backoff."""
     headers = dict(HEADERS_BASE)
     if extra_headers:
         headers.update(extra_headers)
@@ -72,9 +78,29 @@ def fetch_json(url, extra_headers=None, retries=3):
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT_SEC) as r:
                 return json.load(r)
-        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
+        except urllib.error.HTTPError as e:
             last_err = e
-            time.sleep(0.5 * (2 ** attempt))   # 0.5s, 1s, 2s
+            if e.code == 429:
+                # Respect Retry-After if present; otherwise back off hard
+                retry_after = e.headers.get("Retry-After", "")
+                if retry_after.isdigit():
+                    wait = int(retry_after) + random.uniform(0, 1)
+                else:
+                    wait = min(60.0, 5.0 * (2 ** attempt)) + random.uniform(0, 2)
+                time.sleep(wait)
+            elif e.code == 403:
+                # Could be WAF/soft rate-limit OR a genuine "internal-only" posting.
+                # Retry with backoff; if still 403 after retries, caller treats it
+                # as Forbidden (separate bucket from network errors).
+                time.sleep(min(30.0, 3.0 * (2 ** attempt)) + random.uniform(0, 1))
+            elif 500 <= e.code < 600:
+                time.sleep(1.0 * (2 ** attempt))
+            else:
+                # Non-retryable HTTP error (404, etc.) — fail fast
+                raise RuntimeError(f"HTTP {e.code} for {url}: {e}")
+        except (urllib.error.URLError, TimeoutError) as e:
+            last_err = e
+            time.sleep(0.5 * (2 ** attempt))
     raise RuntimeError(f"fetch failed after {retries} attempts: {last_err}")
 
 
@@ -92,6 +118,16 @@ def fetch_search_page(start):
 
 
 def fetch_position_details(pid):
+    """Returns the position_details JSON. Caches successful responses to disk
+    so reruns skip work and recover from rate-limit failures."""
+    cache_path = os.path.join(CACHE_DIR, f"{pid}.json")
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass  # corrupt cache entry; refetch
+
     url = (
         f"{BASE_URL}/api/pcsx/position_details"
         f"?position_id={pid}&domain={DOMAIN}&hl=en"
@@ -101,7 +137,15 @@ def fetch_position_details(pid):
         "Referer": f"{BASE_URL}/careers?pid={pid}",
         "Origin":  BASE_URL,
     }
-    return fetch_json(url, headers)
+    data = fetch_json(url, headers)
+
+    # Write cache atomically (write to tmp, then rename) so a Ctrl-C mid-write
+    # doesn't leave a half-baked file that breaks the next run.
+    tmp_path = cache_path + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+    os.replace(tmp_path, cache_path)
+    return data
 
 
 # ----------------------------------------------------------------------------
@@ -182,12 +226,20 @@ def fetch_clearance_verdicts(positions):
 
     def process(p):
         try:
+            # Skip jitter on cache hits — only throttle when we actually go to the network
+            cache_path = os.path.join(CACHE_DIR, f"{p['id']}.json")
+            if not os.path.exists(cache_path):
+                time.sleep(random.uniform(DETAIL_JITTER_MIN_SEC, DETAIL_JITTER_MAX_SEC))
             d = fetch_position_details(p["id"])
             desc_html = d["data"].get("jobDescription", "") or ""
             desc_text = html_to_text(desc_html)
             return (p, extract_clearance(desc_text), None)
         except Exception as e:
-            return (p, "Error", str(e))
+            msg = str(e)
+            # Distinguish persistent 403s (likely internal-only or withdrawn jobs)
+            # from real errors (network, parsing, etc.)
+            bucket = "Forbidden" if "HTTP Error 403" in msg or "HTTP 403" in msg else "Error"
+            return (p, bucket, msg)
 
     results = []
     completed = 0
@@ -204,13 +256,13 @@ def fetch_clearance_verdicts(positions):
 def write_outputs(results):
     print(f"\n[3/3] Writing output CSVs...")
 
-    counts = {"Yes": 0, "No": 0, "Unknown": 0, "Error": 0}
+    counts = {"Yes": 0, "No": 0, "Unknown": 0, "Forbidden": 0, "Error": 0}
     for _, c, _ in results:
         counts[c] = counts.get(c, 0) + 1
 
     print(f"      clearance summary:")
-    for k in ("No", "Yes", "Unknown", "Error"):
-        print(f"        {k:8s}: {counts.get(k, 0)}")
+    for k in ("No", "Yes", "Unknown", "Forbidden", "Error"):
+        print(f"        {k:9s}: {counts.get(k, 0)}")
 
     # --- main output: clearance == No ---
     keep = [(p, c) for p, c, _ in results if c == "No"]
@@ -253,9 +305,27 @@ def write_outputs(results):
         print(f"      wrote {len(unknowns)} jobs -> "
               f"{os.path.basename(UNKNOWN_CSV)} (manual review)")
 
+    # --- tertiary output: jobs the detail endpoint returned 403 for ---
+    forbiddens = [(p, c) for p, c, _ in results if c == "Forbidden"]
+    if forbiddens:
+        with open(FORBIDDEN_CSV, "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(["req_id", "title", "department", "location", "public_url"])
+            for p, _ in forbiddens:
+                locs = p.get("standardizedLocations") or p.get("locations") or []
+                w.writerow([
+                    p.get("displayJobId", ""),
+                    p.get("name", ""),
+                    p.get("department", ""),
+                    "; ".join(locs),
+                    f"{BASE_URL}/careers/job/{p.get('id')}",
+                ])
+        print(f"      wrote {len(forbiddens)} jobs -> "
+              f"{os.path.basename(FORBIDDEN_CSV)} (403 — likely internal-only or withdrawn)")
+
     errors = [(p, err) for p, c, err in results if c == "Error"]
     if errors:
-        print(f"      {len(errors)} detail fetches failed; first 5:")
+        print(f"      {len(errors)} detail fetches failed with real errors; first 5:")
         for p, err in errors[:5]:
             print(f"        - {p.get('displayJobId')}: {err}")
 
@@ -263,12 +333,22 @@ def write_outputs(results):
 # ----------------------------------------------------------------------------
 
 def main():
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    cached_at_start = len([f for f in os.listdir(CACHE_DIR) if f.endswith(".json")])
+    if cached_at_start:
+        print(f"(resume) {cached_at_start} job details already cached in "
+              f"{os.path.basename(CACHE_DIR)}/ — will skip re-fetching those")
+
     start_time = time.time()
     listings = collect_all_listings()
     results  = fetch_clearance_verdicts(listings)
     write_outputs(results)
+
+    cached_at_end = len([f for f in os.listdir(CACHE_DIR) if f.endswith(".json")])
     elapsed = time.time() - start_time
-    print(f"\nDone in {elapsed:.1f}s.")
+    print(f"\nDone in {elapsed:.1f}s "
+          f"({cached_at_end - cached_at_start} new fetches, "
+          f"{cached_at_end} total cached).")
 
 
 if __name__ == "__main__":
