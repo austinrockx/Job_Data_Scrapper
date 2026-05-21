@@ -350,7 +350,20 @@ def write_outputs(results):
             print(f"        - {p.get('displayJobId')}: {err}")
 
 
-# ----------------------------------------------------------------------------
+def extract_clearance(desc_text):
+    """Returns 'Yes', 'No', or 'Unknown'."""
+    # Primary signal — most reliable when present
+    m = CLEARANCE_REQUIRED_RE.search(desc_text)
+    if m:
+        return m.group(1).capitalize()
+    # Fallback — CLEARANCE TYPE indicates whether clearance is involved
+    m = CLEARANCE_TYPE_RE.search(desc_text)
+    if m:
+        ctype = m.group(1).strip()
+        if NO_CLEARANCE_TYPE_VALUES_RE.match(ctype):
+            return "No"
+        return "Yes"
+    return "Unknown"
 
 def main():
     os.makedirs(CACHE_DIR, exist_ok=True)
