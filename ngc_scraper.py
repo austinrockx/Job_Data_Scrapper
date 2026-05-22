@@ -92,7 +92,9 @@ SECTION_HEADINGS = [
     (r"Position\s+Responsibilities",           "roles_responsibilities"),
     (r"Key\s+Responsibilities",                "roles_responsibilities"),
     (r"Essential\s+(?:Job\s+)?Functions",      "roles_responsibilities"),
+    (r"What\s+You'?ll\s+Get\s+to\s+Do",        "roles_responsibilities"),
     (r"What\s+You'?ll\s+Do",                   "roles_responsibilities"),
+    (r"What\s+You\s+Will\s+Do",                "roles_responsibilities"),
     (r"Responsibilities",                      "roles_responsibilities"),
     (r"Basic\s+Qualifications",                "basic_qualifications"),
     (r"Minimum\s+Qualifications",              "basic_qualifications"),
@@ -219,9 +221,15 @@ def html_to_text(html):
     """Crude but adequate HTML -> plain text for regex purposes."""
     text = re.sub(r"<br\s*/?>", "\n", html, flags=re.I)
     text = re.sub(r"</p>", "\n\n", text, flags=re.I)
+    # Make list items their own lines — without this <ul><li>a</li><li>b</li></ul>
+    # collapses to "ab" which obliterates qualification bullets.
+    text = re.sub(r"<li[^>]*>", "\n", text, flags=re.I)
+    text = re.sub(r"</li>", "\n", text, flags=re.I)
     text = re.sub(r"<[^>]+>", "", text)
     text = unescape(text)
-    text = re.sub(r"[ \t]+", " ", text)
+    # Collapse non-breaking spaces (\xa0 from &nbsp;) and other spaces, but
+    # keep newlines.
+    text = re.sub(r"[ \t\xa0]+", " ", text)
     text = re.sub(r"\n\s*\n+", "\n\n", text)
     return text.strip()
 
@@ -432,10 +440,19 @@ def parse_sections(desc_text):
     Headings must be on their own line (after html_to_text) to avoid matching
     the same words in body prose.
     """
-    # Locate every heading occurrence with its canonical key
-    found = []  # list of (heading_start, heading_end, key)
+    # Locate every heading occurrence with its canonical key.
+    # NGC writes headings like:
+    #   "Basic Qualifications:"
+    #   "Basic Qualifications for Associate SW Test Engineer:"
+    #   "Roles and Responsibilities" (no colon, with bullets below)
+    # So we anchor the heading word to line start and allow up to ~120 chars
+    # of trailing text on the same line before requiring a newline.
+    found = []  # list of (heading_start, heading_line_end, key)
     for pat, key in SECTION_HEADINGS:
-        regex = re.compile(rf"(?:^|\n)\s*({pat})\s*:?\s*(?=\n|$)", re.I)
+        regex = re.compile(
+            rf"(?:^|\n)[ \t]*({pat})\b[^\n]{{0,120}}(?=\n|$)",
+            re.I,
+        )
         for m in regex.finditer(desc_text):
             found.append((m.start(1), m.end(), key))
 
