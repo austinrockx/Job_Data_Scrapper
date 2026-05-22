@@ -1,8 +1,7 @@
-req_id,title,department,url
-R10230297,Service Desk Engineer,End User Support,https://jobs.northropgrumman.com/careers/job/1340071376591
-R10228853,Safety Engineer,Environmental,https://jobs.northropgrumman.com/careers/job/1340071051524
-R10232085,2026 Associate Nuclear Surety Systems Engineer - Roy UT,Systems/Architecture/Test,https://jobs.northropgrumman.com/careers/job/1340071633695
-R10232471,2026 Associate Nuclear Surety Systems Engineer - Roy UT,Systems/Architecture/Test,https://jobs.northropgrumman.com/careers/job/1340071682014
-R10232693,Engineering Technician 2,Tech Support Mult-Func,https://jobs.northropgrumman.com/careers/job/1340071704701
-R10230878,Systems Engineer,Design and Programming,https://jobs.northropgrumman.com/careers/job/1340071479105
-R10232305,Manufacturing Technician 3,Manufacturing and Production,https://jobs.northropgrumman.com/careers/job/1340071647033
+req_id,title,department,url,roles_responsibilities,basic_qualifications,preferred_qualifications
+R10230297,Service Desk Engineer,End User Support,https://jobs.northropgrumman.com/careers/job/1340071376591,,,
+R10228853,Safety Engineer,Environmental,https://jobs.northropgrumman.com/careers/job/1340071051524,,,
+R10232085,2026 Associate Nuclear Surety Systems Engineer - Roy UT,Systems/Architecture/Test,https://jobs.northropgrumman.com/careers/job/1340071633695,,"A candidate must meet ALL the criteria below. The candidate must:
+
+Be completing or has completed their degree (Bachelor’s or Master’s) from an accredited institution.Be majoring in or having majored in Systems Engineering, Mechanical Engineering, Aerospace Engineering, Computer Engineering, Electrical Engineering, or Nuclear Engineering.Be able to obtain and maintain a U.S. Government security clearance (U.S. citizenship is a pre-requisite).",Have an overall cumulative GPA of 3.70/4.0 or higherCurrent active Secret Security Clearance or higher
+R10230878,Systems Engineer,Design and Programming,https://jobs.northropgrumman.com/careers/job/1340071479105,,,

@@ -83,6 +83,49 @@ NO_CLEARANCE_TYPE_VALUES_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Section headings NGC uses for the three resume-relevant blocks. Order matters:
+# more specific patterns first so they win over generic ones (e.g. "Job
+# Responsibilities" beats the bare "Responsibilities").
+SECTION_HEADINGS = [
+    (r"Roles?\s+(?:and|&)\s+Responsibilities", "roles_responsibilities"),
+    (r"Job\s+Responsibilities",                "roles_responsibilities"),
+    (r"Position\s+Responsibilities",           "roles_responsibilities"),
+    (r"Key\s+Responsibilities",                "roles_responsibilities"),
+    (r"Essential\s+(?:Job\s+)?Functions",      "roles_responsibilities"),
+    (r"What\s+You'?ll\s+Do",                   "roles_responsibilities"),
+    (r"Responsibilities",                      "roles_responsibilities"),
+    (r"Basic\s+Qualifications",                "basic_qualifications"),
+    (r"Minimum\s+Qualifications",              "basic_qualifications"),
+    (r"Required\s+Qualifications",             "basic_qualifications"),
+    (r"Preferred\s+Qualifications",            "preferred_qualifications"),
+    (r"Desired\s+Qualifications",              "preferred_qualifications"),
+    (r"Additional\s+Qualifications",           "preferred_qualifications"),
+    (r"Preferred\s+Skills",                    "preferred_qualifications"),
+]
+
+EMPTY_SECTIONS = {
+    "roles_responsibilities": "",
+    "basic_qualifications": "",
+    "preferred_qualifications": "",
+}
+
+# Footer boilerplate that follows the qualifications block in NGC postings.
+# Used as a terminator so the last section doesn't absorb compensation and
+# clearance lines.
+SECTION_FOOTER_TERMINATORS_RE = re.compile(
+    r"(?:^|\n)\s*(?:"
+    r"Salary\s+Range"
+    r"|CLEARANCE\s+REQUIRED\s+FOR\s+START"
+    r"|CLEARANCE\s+TYPE"
+    r"|Standard\s+Weekly\s+Hours"
+    r"|The\s+application\s+period"
+    r"|Northrop\s+Grumman\s+is\s+committed"
+    r"|Northrop\s+Grumman\s+is\s+an\s+Equal"
+    r"|Equal\s+Opportunity"
+    r")\b",
+    re.IGNORECASE,
+)
+
 # ----------------------------------------------------------------------------
 # HTTP helpers
 # ----------------------------------------------------------------------------
@@ -183,14 +226,6 @@ def html_to_text(html):
     return text.strip()
 
 
-def extract_clearance(desc_text):
-    """Returns 'Yes', 'No', or 'Unknown'."""
-    m = CLEARANCE_RE.search(desc_text)
-    if not m:
-        return "Unknown"
-    return m.group(1).capitalize()
-
-
 def fmt_posted_date(ts):
     if not ts:
         return ""
@@ -253,13 +288,13 @@ def fetch_clearance_verdicts(positions):
             d = fetch_position_details(p["id"])
             desc_html = d["data"].get("jobDescription", "") or ""
             desc_text = html_to_text(desc_html)
-            return (p, extract_clearance(desc_text), None)
+            return (p, extract_clearance(desc_text), parse_sections(desc_text), None)
         except Exception as e:
             msg = str(e)
             # Distinguish persistent 403s (likely internal-only or withdrawn jobs)
             # from real errors (network, parsing, etc.)
             bucket = "Forbidden" if "HTTP Error 403" in msg or "HTTP 403" in msg else "Error"
-            return (p, bucket, msg)
+            return (p, bucket, dict(EMPTY_SECTIONS), msg)
 
     results = []
     completed = 0
@@ -277,7 +312,7 @@ def write_outputs(results):
     print(f"\n[3/3] Writing output CSVs...")
 
     counts = {"Yes": 0, "No": 0, "Unknown": 0, "Forbidden": 0, "Error": 0}
-    for _, c, _ in results:
+    for _, c, _, _ in results:
         counts[c] = counts.get(c, 0) + 1
 
     print(f"      clearance summary:")
@@ -285,7 +320,7 @@ def write_outputs(results):
         print(f"        {k:9s}: {counts.get(k, 0)}")
 
     # --- main output: clearance == No ---
-    keep = [(p, c) for p, c, _ in results if c == "No"]
+    keep = [(p, sec) for p, c, sec, _ in results if c == "No"]
     keep.sort(key=lambda x: x[0].get("postedTs") or 0, reverse=True)
 
     with open(NO_CSV, "w", newline="", encoding="utf-8") as f:
@@ -293,8 +328,9 @@ def write_outputs(results):
         w.writerow([
             "req_id", "title", "department", "location",
             "work_location_option", "posted_date", "url",
+            "roles_responsibilities", "basic_qualifications", "preferred_qualifications",
         ])
-        for p, _ in keep:
+        for p, sec in keep:
             url = f"{BASE_URL}{p.get('positionUrl', '')}"
             locs = p.get("standardizedLocations") or p.get("locations") or []
             w.writerow([
@@ -305,28 +341,47 @@ def write_outputs(results):
                 p.get("workLocationOption", ""),
                 fmt_posted_date(p.get("postedTs")),
                 url,
+                sec.get("roles_responsibilities", ""),
+                sec.get("basic_qualifications", ""),
+                sec.get("preferred_qualifications", ""),
             ])
     print(f"      wrote {len(keep)} jobs -> {os.path.basename(NO_CSV)}")
 
+    # Quick sanity check on how often sections parsed
+    if keep:
+        empty_roles = sum(1 for _, s in keep if not s.get("roles_responsibilities"))
+        empty_basic = sum(1 for _, s in keep if not s.get("basic_qualifications"))
+        empty_pref  = sum(1 for _, s in keep if not s.get("preferred_qualifications"))
+        print(f"      section coverage (empty cells in the No-clearance CSV):")
+        print(f"        roles_responsibilities  : {empty_roles}/{len(keep)}")
+        print(f"        basic_qualifications    : {empty_basic}/{len(keep)}")
+        print(f"        preferred_qualifications: {empty_pref}/{len(keep)}")
+
     # --- secondary output: jobs where the clearance line was missing ---
-    unknowns = [(p, c) for p, c, _ in results if c == "Unknown"]
+    unknowns = [(p, sec) for p, c, sec, _ in results if c == "Unknown"]
     if unknowns:
         with open(UNKNOWN_CSV, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
-            w.writerow(["req_id", "title", "department", "url"])
-            for p, _ in unknowns:
+            w.writerow([
+                "req_id", "title", "department", "url",
+                "roles_responsibilities", "basic_qualifications", "preferred_qualifications",
+            ])
+            for p, sec in unknowns:
                 url = f"{BASE_URL}{p.get('positionUrl', '')}"
                 w.writerow([
                     p.get("displayJobId", ""),
                     p.get("name", ""),
                     p.get("department", ""),
                     url,
+                    sec.get("roles_responsibilities", ""),
+                    sec.get("basic_qualifications", ""),
+                    sec.get("preferred_qualifications", ""),
                 ])
         print(f"      wrote {len(unknowns)} jobs -> "
               f"{os.path.basename(UNKNOWN_CSV)} (manual review)")
 
     # --- tertiary output: jobs the detail endpoint returned 403 for ---
-    forbiddens = [(p, c) for p, c, _ in results if c == "Forbidden"]
+    forbiddens = [(p, sec) for p, c, sec, _ in results if c == "Forbidden"]
     if forbiddens:
         with open(FORBIDDEN_CSV, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
@@ -343,7 +398,7 @@ def write_outputs(results):
         print(f"      wrote {len(forbiddens)} jobs -> "
               f"{os.path.basename(FORBIDDEN_CSV)} (403 — likely internal-only or withdrawn)")
 
-    errors = [(p, err) for p, c, err in results if c == "Error"]
+    errors = [(p, err) for p, c, _, err in results if c == "Error"]
     if errors:
         print(f"      {len(errors)} detail fetches failed with real errors; first 5:")
         for p, err in errors[:5]:
@@ -364,6 +419,58 @@ def extract_clearance(desc_text):
             return "No"
         return "Yes"
     return "Unknown"
+
+
+def parse_sections(desc_text):
+    """Split a job description into roles/basic_qual/preferred_qual sections.
+
+    Returns a dict with keys roles_responsibilities, basic_qualifications,
+    preferred_qualifications. Missing sections are empty strings.
+
+    Strategy: locate every recognized heading line in the text, then for each
+    heading take everything up to the next heading as that section's body.
+    Headings must be on their own line (after html_to_text) to avoid matching
+    the same words in body prose.
+    """
+    # Locate every heading occurrence with its canonical key
+    found = []  # list of (heading_start, heading_end, key)
+    for pat, key in SECTION_HEADINGS:
+        regex = re.compile(rf"(?:^|\n)\s*({pat})\s*:?\s*(?=\n|$)", re.I)
+        for m in regex.finditer(desc_text):
+            found.append((m.start(1), m.end(), key))
+
+    if not found:
+        return dict(EMPTY_SECTIONS)
+
+    # Sort by position; drop overlaps (keeps the first/most-specific pattern
+    # since SECTION_HEADINGS is ordered specific -> generic)
+    found.sort(key=lambda x: x[0])
+    deduped = []
+    for start, end, key in found:
+        if deduped and start <= deduped[-1][1]:
+            continue
+        deduped.append((start, end, key))
+
+    # Extract content between each heading and the next.
+    # For the LAST recognized heading, also stop at any known footer marker
+    # (Salary Range / CLEARANCE REQUIRED FOR START / EEO boilerplate / etc.)
+    # so the final section doesn't absorb the trailing compensation+clearance
+    # block.
+    sections = dict(EMPTY_SECTIONS)
+    for i, (_, end, key) in enumerate(deduped):
+        next_start = deduped[i + 1][0] if i + 1 < len(deduped) else len(desc_text)
+        chunk = desc_text[end:next_start]
+        # Trim the chunk at the first footer terminator if any
+        fm = SECTION_FOOTER_TERMINATORS_RE.search(chunk)
+        if fm:
+            chunk = chunk[: fm.start()]
+        content = chunk.strip()
+        if sections[key]:
+            # Same canonical section heading appears twice — concatenate
+            sections[key] += "\n\n" + content
+        else:
+            sections[key] = content
+    return sections
 
 def main():
     os.makedirs(CACHE_DIR, exist_ok=True)
